@@ -54,19 +54,6 @@ class Frame:
 		else:
 			self._frame_data[key].append(value)
 
-	def _handle_file_position(self, file):
-		file_position = file.tell()
-		buffer_count = (file_position // Replay.BUFFER_SIZE)
-		buffer_offset = file_position % Replay.BUFFER_SIZE
-		buffer_excess = Replay.BUFFER_SIZE - buffer_offset
-
-		if self.get_size() > buffer_excess:
-			if buffer_count == Replay.BUFFER_COUNT:
-				print('Replay exceeds the max replay size allowed by default in the game')
-			if buffer_count == Replay.BUFFER_MAX_COUNT:
-				print('Replay exceeds the max replay size allowed in Dannye\'s longer replays mod')
-			file.seek(buffer_excess, 1)
-
 	def write(self, file):
 		buffer_offset = (file.tell() - 8) & Replay.BUFFER_SIZE
 		buffer_size = Replay.BUFFER_SIZE - buffer_offset
@@ -74,6 +61,12 @@ class Frame:
 
 		if self.get_size() > buffer_size:
 			file.seek(buffer_size, 1)
+			buffer_count += 1
+
+		if buffer_count == Replay.BUFFER_COUNT:
+			print('Replay exceeds the max replay size allowed by default in the game')
+		elif buffer_count == Replay.BUFFER_MAX_COUNT:
+			print('Replay exceeds the max replay size allowed in Dannye\'s longer replays mod')
 
 		for data in self._frame_data.values():
 			if not data:
