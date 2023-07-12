@@ -40,13 +40,12 @@ class ReplayBlockBase(ctypes.LittleEndianStructure):
 	def get_as_block_type(self):
 		for cls in self.__class__.__subclasses__():
 			if cls.TYPE == self.block_type:
-				return ctypes.cast(ctypes.pointer(self), ctypes.POINTER(cls)).contents
-			elif cls.TYPE == self.TYPE_VEHICLE:
-				for vehicle_cls in cls.__subclasses__():
-					if vehicle_cls.TYPE == self.block_type:
-						return ctypes.cast(ctypes.pointer(self), ctypes.POINTER(vehicle_cls)).contents
+				return self._cast_to_class(cls)
 
 		raise TypeError(F'Unkown replay block type: {self.block_type}')
+
+	def _cast_to_class(self, cls):
+		return ctypes.cast(ctypes.pointer(self), ctypes.POINTER(cls)).contents
 
 	def get_size(self):
 		return ctypes.sizeof(self.__class__)

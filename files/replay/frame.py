@@ -37,7 +37,7 @@ class Frame:
 				block.TYPE_HELICOPTER: [],
 				block.TYPE_PLANE: [],
 				block.TYPE_TRAIN: [],
-				block.TYPE_CLOTHES: self.blocks.Clothes()
+				block.TYPE_CLOTHES: [],
 			})
 
 		return frame_data
@@ -86,8 +86,8 @@ class Frame:
 		buffer_offset = (start_pos - 8) % REPLAY_BUFFER_SIZE
 		buffer_size = REPLAY_BUFFER_SIZE - buffer_offset
 		buffer = bytearray(file.read(buffer_size))
-		offset = 0
 
+		offset = 0
 		while offset <= len(buffer) - 16:
 			block = self.blocks.ReplayBlock.create_from_buffer(buffer, offset)
 			offset += block.get_size()
@@ -102,11 +102,6 @@ class Frame:
 			else:
 				self.set(block.TYPE, block)
 
-
-
-	def _get_buffer(self, file, size):
-		return bytearray(file.read(size))
-
 	def get_size(self):
 		size = 0
 		for data in self._frame_data.values():
@@ -119,5 +114,3 @@ class Frame:
 				size += data.get_size()
 
 		return size + self.blocks.FrameEnd().get_size()
-
-
