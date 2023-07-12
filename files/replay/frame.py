@@ -55,7 +55,7 @@ class Frame:
 		else:
 			self._frame_data[key].append(value)
 
-	def write(self, file):
+	def write(self, file, last_frame=False):
 		buffer_offset = (file.tell() - 8) & REPLAY_BUFFER_SIZE
 		buffer_size = REPLAY_BUFFER_SIZE - buffer_offset
 		buffer_count = (buffer_offset // REPLAY_BUFFER_SIZE)
@@ -80,6 +80,8 @@ class Frame:
 				file.write(data)
 
 		file.write(self.blocks.FrameEnd())
+		if last_frame:
+			file.write(self.blocks.End())
 
 	def read(self, file):
 		start_pos = file.tell()
