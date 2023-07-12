@@ -3,7 +3,7 @@ from .block import ReplayBlock
 
 
 class Clock(ReplayBlock):
-	TYPE = 5
+	TYPE = 6
 	_fields_  = (
 		('hours', ctypes.c_uint8),
 		('minutes', ctypes.c_uint8),

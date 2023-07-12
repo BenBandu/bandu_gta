@@ -1,8 +1,9 @@
-import blocks
+from . import blocks
+from . import VERSION_GTA3, VERSION_GTAVC, VERSION_GTASA
+from . import REPLAY_BUFFER_SIZE, REPLAY_NUM_BUFFERS, REPLAY_MAX_BUFFERS
 
 
 class Frame:
-
 	def __init__(self, version):
 		self._version = version
 		self.blocks = blocks.version_mapping[version]
@@ -21,14 +22,14 @@ class Frame:
 			block.TYPE_BULLET_TRACE: []
 		}
 
-		if self._version > Replay.VERSION_GTA3:
+		if self._version > VERSION_GTA3:
 			frame_data.update({
 				block.TYPE_BIKE: [],
 				block.TYPE_PARTICLE: [],
 				block.TYPE_MISC: self.blocks.Misc(),
 			})
 
-		if self._version > Replay.VERSION_GTAVC:
+		if self._version > VERSION_GTAVC:
 			frame_data.update({
 				block.TYPE_VEHICLE_DELETED: [],
 				block.TYPE_PED_DELETED: [],
@@ -55,17 +56,17 @@ class Frame:
 			self._frame_data[key].append(value)
 
 	def write(self, file):
-		buffer_offset = (file.tell() - 8) & Replay.BUFFER_SIZE
-		buffer_size = Replay.BUFFER_SIZE - buffer_offset
-		buffer_count = (buffer_offset // Replay.BUFFER_SIZE)
+		buffer_offset = (file.tell() - 8) & REPLAY_BUFFER_SIZE
+		buffer_size = REPLAY_BUFFER_SIZE - buffer_offset
+		buffer_count = (buffer_offset // REPLAY_BUFFER_SIZE)
 
 		if self.get_size() > buffer_size:
 			file.seek(buffer_size, 1)
 			buffer_count += 1
 
-		if buffer_count == Replay.BUFFER_COUNT:
+		if buffer_count == REPLAY_NUM_BUFFERS:
 			print('Replay exceeds the max replay size allowed by default in the game')
-		elif buffer_count == Replay.BUFFER_MAX_COUNT:
+		elif buffer_count == REPLAY_MAX_BUFFERS:
 			print('Replay exceeds the max replay size allowed in Dannye\'s longer replays mod')
 
 		for data in self._frame_data.values():
@@ -81,23 +82,30 @@ class Frame:
 		file.write(self.blocks.FrameEnd())
 
 	def read(self, file):
-		buffer_offset = (file.tell() - 8) % Replay.BUFFER_SIZE
-		buffer_size = Replay.BUFFER_SIZE - buffer_offset
-
+		start_pos = file.tell()
+		buffer_offset = (start_pos - 8) % REPLAY_BUFFER_SIZE
+		buffer_size = REPLAY_BUFFER_SIZE - buffer_offset
 		buffer = bytearray(file.read(buffer_size))
 		offset = 0
 
 		while offset <= len(buffer) - 16:
-			block = self.blocks.ReplayBlock.from_buffer(buffer, offset)
+			block = self.blocks.ReplayBlock.create_from_buffer(buffer, offset)
 			offset += block.get_size()
 
 			if isinstance(block, self.blocks.FrameEnd):
+				file.seek(start_pos + offset)
 				break
 			elif isinstance(block, self.blocks.End):
-				buffer = bytearray(file.read(Replay.BUFFER_SIZE))
+				start_pos = file.tell()
+				buffer = bytearray(file.read(REPLAY_BUFFER_SIZE))
 				offset = 0
 			else:
 				self.set(block.TYPE, block)
+
+
+
+	def _get_buffer(self, file, size):
+		return bytearray(file.read(size))
 
 	def get_size(self):
 		size = 0
@@ -111,8 +119,5 @@ class Frame:
 				size += data.get_size()
 
 		return size + self.blocks.FrameEnd().get_size()
-
-
-from files.replay.replay import Replay
 
 

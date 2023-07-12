@@ -1,21 +1,14 @@
-from frame import Frame
+from .frame import Frame
+from . import VERSION_GTA3, VERSION_GTAVC, VERSION_GTASA
+from . import REPLAY_BUFFER_SIZE
 
 
 class Replay:
-
-	VERSION_GTA3 = 1
-	VERSION_GTAVC = 2
-	VERSION_GTASA = 3
-
 	VERSIONS = [
 		VERSION_GTA3,
 		VERSION_GTAVC,
 		VERSION_GTASA
 	]
-
-	BUFFER_SIZE = 100_000
-	BUFFER_COUNT = 8
-	BUFFER_MAX_COUNT = 64
 
 	def __init__(self, version):
 		self._version = version
@@ -26,16 +19,21 @@ class Replay:
 		self = cls(0)
 		self.read_from_file(filepath)
 
+		return self
+
 	def _get_version_header(self, version=None):
 		if version is None:
 			version = self._version
 
-		if version == Replay.VERSION_GTA3:
+		if version == VERSION_GTA3:
 			return b'gta3_7f\x00'
-		if version == Replay.VERSION_GTAVC:
+		if version == VERSION_GTAVC:
 			return b'gtaVC7f\x00'
-		if version == Replay.VERSION_GTASA:
-			return b'gtaSA29\x00'
+		if version == VERSION_GTASA:
+			return b'GtaSA29\x00'
+
+	def _get_remaining_buffer_size(self, size):
+		return REPLAY_BUFFER_SIZE - (size % REPLAY_BUFFER_SIZE)
 
 	def read_from_file(self, filepath):
 		with open(filepath, 'rb') as file:
@@ -63,3 +61,18 @@ class Replay:
 
 			for frame in self._frames:
 				frame.write(file)
+
+			offset = self._get_remaining_buffer_size(file.tell())
+			file.seek(offset, 1)
+
+	def get_version(self):
+		return self._version
+
+	def get_size(self):
+		size = 0
+		for frame in self._frames:
+			size += frame.get_size()
+
+		# Get the remaining bytes to round to the next buffer
+
+		return size + self._get_remaining_buffer_size(size) + 8

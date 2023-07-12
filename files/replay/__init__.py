@@ -1,6 +1,3 @@
-from replay import Replay
-from frame import Frame
-
 VERSION_GTA3  = 1
 VERSION_GTAVC = 2
 VERSION_GTASA = 3

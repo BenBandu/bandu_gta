@@ -25,7 +25,7 @@ class ReplayBlockBase(ctypes.LittleEndianStructure):
 	TYPE_CLOTHES = None
 
 	_fields_ = (
-		('key', ctypes.c_uint8),
+		('block_type', ctypes.c_uint8),
 	)
 
 	def __init__(self, *args, **kw):
@@ -39,7 +39,7 @@ class ReplayBlockBase(ctypes.LittleEndianStructure):
 
 	def get_as_block_type(self):
 		for cls in self.__class__.__subclasses__():
-			if cls.id == self.type:
+			if cls.TYPE == self.block_type:
 				return ctypes.cast(ctypes.pointer(self), ctypes.POINTER(cls)).contents
 
 		raise TypeError(F'Unkown replay block type: {self.block_type}')
