@@ -89,9 +89,9 @@ class Frame:
 			file.write(ped)
 		for trace in self._frame_data[block.TYPE_BULLET_TRACE]:
 			file.write(trace)
-		file.write(self._frame_data[block.TYPE_MISC])
 
 		if self._version > VERSION_GTA3:
+			file.write(self._frame_data[block.TYPE_MISC])
 			for particle in self._frame_data[block.TYPE_PARTICLE]:
 				file.write(particle)
 		if self._version > VERSION_GTAVC:
