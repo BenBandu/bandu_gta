@@ -27,10 +27,10 @@ class ReplayBlock(ReplayBlockBase):
 	def get_as_block_type(self):
 		for cls in self.__class__.__subclasses__():
 			if cls.TYPE == self.block_type:
-				return self._cast_to_class(cls)
+				return self.cast_to_class(cls)
 			elif cls.TYPE == self.TYPE_VEHICLE:
 				for vehicle_cls in cls.__subclasses__():
 					if vehicle_cls.TYPE == self.block_type:
-						return self._cast_to_class(vehicle_cls)
+						return self.cast_to_class(vehicle_cls)
 
 		raise TypeError(F'Unkown replay block type: {self.block_type}')

@@ -69,15 +69,38 @@ class Frame:
 		elif buffer_count == REPLAY_MAX_BUFFERS:
 			print('Replay exceeds the max replay size allowed in Dannye\'s longer replays mod')
 
-		for data in self._frame_data.values():
-			if not data:
-				continue
+		block = self.blocks.ReplayBlock
+		vehicle_types = [block.TYPE_VEHICLE]
+		if self._version > VERSION_GTA3:
+			vehicle_types.append(block.TYPE_BIKE)
+		if self._version > VERSION_GTAVC:
+			vehicle_types.extend([block.TYPE_BMX, block.TYPE_HELICOPTER, block.TYPE_PLANE, block.TYPE_TRAIN])
 
-			if type(data) in (list, tuple):
-				for value in data:
-					file.write(value)
-			else:
-				file.write(data)
+		file.write(self._frame_data[block.TYPE_GENERAL])
+		file.write(self._frame_data[block.TYPE_CLOCK])
+		file.write(self._frame_data[block.TYPE_WEATHER])
+		file.write(self._frame_data[block.TYPE_TIMER])
+		for vehicle_type in vehicle_types:
+			for vehicle_block in self._frame_data[vehicle_type]:
+				file.write(vehicle_block)
+		for ped_header in self._frame_data[block.TYPE_PED_HEADER]:
+			file.write(ped_header)
+		for ped in self._frame_data[block.TYPE_PED]:
+			file.write(ped)
+		for trace in self._frame_data[block.TYPE_BULLET_TRACE]:
+			file.write(trace)
+		file.write(self._frame_data[block.TYPE_MISC])
+
+		if self._version > VERSION_GTA3:
+			for particle in self._frame_data[block.TYPE_PARTICLE]:
+				file.write(particle)
+		if self._version > VERSION_GTAVC:
+			for vehicle_deleted in self._frame_data[block.TYPE_VEHICLE_DELETED]:
+				file.write(vehicle_deleted)
+			for ped_deleted in self._frame_data[block.TYPE_PED_DELETED]:
+				file.write(ped_deleted)
+			for clothes in self._frame_data[block.TYPE_CLOTHES]:
+				file.write(clothes)
 
 		file.write(self.blocks.FrameEnd())
 		if last_frame:
@@ -116,3 +139,23 @@ class Frame:
 				size += data.get_size()
 
 		return size + self.blocks.FrameEnd().get_size()
+
+	def convert_to_version(self, to_version):
+		# TODO: QUICK AND BAD IMPLEMENTATION! Blocks should probably handle conversion internally.
+		# But this works for downgrading a steam san andreas replay to a normal replay
+		class_mapping = blocks.version_mapping[to_version].ReplayBlock.get_class_mapping()
+
+		for data in self._frame_data.values():
+			if not data:
+				continue
+
+			if type(data) in (list, tuple):
+				for i, block in enumerate(data):
+					new_block = block.cast_to_class(class_mapping[block.TYPE])
+					self._frame_data[block.TYPE][i] = new_block
+			else:
+				block = data
+				new_block = block.cast_to_class(class_mapping[block.TYPE])
+				self._frame_data[block.TYPE] = new_block
+
+		self._version = to_version

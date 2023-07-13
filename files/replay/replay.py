@@ -31,7 +31,7 @@ class Replay:
 			return b'GtaSA29\x00'
 
 	def _get_remaining_buffer_size(self, size):
-		return REPLAY_BUFFER_SIZE - (size % REPLAY_BUFFER_SIZE)
+		return REPLAY_BUFFER_SIZE - (size % REPLAY_BUFFER_SIZE) + 8
 
 	def _handle_potential_steam_version(self, file):
 		"""
@@ -85,10 +85,16 @@ class Replay:
 				frame.write(file, is_last_frame)
 
 			offset = self._get_remaining_buffer_size(file.tell())
-			file.seek(offset, 1)
+			file.write(bytes(offset))
 
 	def get_version(self):
 		return self._version
+
+	def convert_to_version(self, to_version):
+		for frame in self._frames:
+			frame.convert_to_version(to_version)
+
+		self._version = to_version
 
 	def get_size(self):
 		size = 0
@@ -96,4 +102,4 @@ class Replay:
 			size += frame.get_size()
 
 		# Get the remaining bytes to round to the next buffer
-		return size + self._get_remaining_buffer_size(size) + 8
+		return size + self._get_remaining_buffer_size(size)
