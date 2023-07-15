@@ -2,6 +2,8 @@ from ..replay_block_base import ReplayBlockBase
 
 
 class ReplayBlock(ReplayBlockBase):
+	VERSION = 2
+
 	TYPE_END = 0
 	TYPE_VEHICLE = 1
 	TYPE_BIKE = 2

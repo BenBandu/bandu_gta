@@ -33,6 +33,10 @@ class ReplayBlockBase(ctypes.LittleEndianStructure):
 		self.block_type = self.TYPE
 
 	@classmethod
+	def get_version(cls, version):
+		return cls.__subclasses__()[version - 1]
+
+	@classmethod
 	def create_from_buffer(cls, buffer, offset):
 		block = cls.from_buffer(buffer, offset)
 		return block.get_as_block_type()
@@ -49,12 +53,3 @@ class ReplayBlockBase(ctypes.LittleEndianStructure):
 
 	def get_size(self):
 		return ctypes.sizeof(self.__class__)
-
-	@classmethod
-	def get_class_mapping(cls):
-		mapping = {}
-		for subcls in cls.__subclasses__():
-			mapping[subcls.TYPE] = subcls
-			mapping.update(subcls.get_class_mapping())
-
-		return mapping
