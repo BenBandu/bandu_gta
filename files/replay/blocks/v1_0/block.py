@@ -14,3 +14,7 @@ class ReplayBlock(ReplayBlockBase):
 	TYPE_FRAME_END = 7
 	TYPE_TIMER = 8
 	TYPE_BULLET_TRACE = 9
+
+	@classmethod
+	def get_vehicles_types(cls):
+		return [cls.TYPE_VEHICLE]

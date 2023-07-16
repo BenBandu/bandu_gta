@@ -3,6 +3,9 @@ class Frame:
 		self._version = version
 		self._frame_data = {}
 
+	def get_frame_data(self):
+		return self._frame_data
+
 	def get(self, key):
 		return self._frame_data.get(key, None)
 
@@ -16,8 +19,7 @@ class Frame:
 		else:
 			self._frame_data[key].append(value)
 
-	@property
-	def size(self):
+	def get_size(self):
 		size = 0
 		for data in self._frame_data.values():
 			if not data:

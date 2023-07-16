@@ -41,6 +41,10 @@ class ReplayBlockBase(ctypes.LittleEndianStructure):
 		block = cls.from_buffer(buffer, offset)
 		return block.get_as_block_type()
 
+	@classmethod
+	def get_vehicles_types(cls):
+		raise NotImplementedError
+
 	def get_as_block_type(self):
 		for cls in self.__class__.__subclasses__():
 			if cls.TYPE == self.block_type:

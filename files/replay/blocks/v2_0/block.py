@@ -17,3 +17,7 @@ class ReplayBlock(ReplayBlockBase):
 	TYPE_BULLET_TRACE = 10
 	TYPE_PARTICLE = 11
 	TYPE_MISC = 12
+
+	@classmethod
+	def get_vehicles_types(cls):
+		return [cls.TYPE_VEHICLE, cls.TYPE_BIKE]
