@@ -18,3 +18,7 @@ class ReplayBlock(ReplayBlockBase):
 	@classmethod
 	def get_vehicles_types(cls):
 		return [cls.TYPE_VEHICLE]
+
+	@classmethod
+	def get_required_types(cls):
+		return [cls.TYPE_GENERAL, cls.TYPE_CLOCK, cls.TYPE_WEATHER, cls.TYPE_TIMER]

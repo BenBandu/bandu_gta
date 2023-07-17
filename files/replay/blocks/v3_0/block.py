@@ -30,6 +30,10 @@ class ReplayBlock(ReplayBlockBase):
 	def get_vehicles_types(cls):
 		return [cls.TYPE_VEHICLE, cls.TYPE_BIKE, cls.TYPE_BMX, cls.TYPE_HELICOPTER, cls.TYPE_PLANE, cls.TYPE_TRAIN]
 
+	@classmethod
+	def get_required_types(cls):
+		return [cls.TYPE_GENERAL, cls.TYPE_CLOCK, cls.TYPE_WEATHER, cls.TYPE_TIMER, cls.TYPE_MISC]
+
 	def get_as_block_type(self):
 		for cls in self.__class__.__subclasses__():
 			if cls.TYPE == self.block_type:
