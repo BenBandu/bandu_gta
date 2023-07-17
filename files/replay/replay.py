@@ -134,10 +134,9 @@ class Replay:
 			self._buffers = []
 			return
 
-		ReplayBlock = self.blocks.ReplayBlock
-		self._buffers = [bytearray()]
+		new_buffers = [bytearray()]
 		for frame in self._frames:
-			framebuffer = self._buffers[-1]
+			framebuffer = new_buffers[-1]
 			if len(framebuffer) + frame.get_size() > Replay.BUFFER_SIZE - 16:
 				# Frame can't fit in the current buffer, so we finish writing it by adding an end block
 				# and adding the remaining size, so it becomes the correct buffer size
@@ -145,52 +144,53 @@ class Replay:
 				framebuffer += bytearray(Replay.BUFFER_SIZE - len(framebuffer))
 
 				# Then we create a new buffer
-				self._buffers.append(bytearray())
-				framebuffer = self._buffers[-1]
+				new_buffers.append(bytearray())
+				framebuffer = new_buffers[-1]
 
 			frame_data = frame.get_frame_data()
 
-			framebuffer += frame_data.get(ReplayBlock.TYPE_GENERAL, self.blocks.General())
-			framebuffer += frame_data.get(ReplayBlock.TYPE_CLOCK, self.blocks.Clock())
-			framebuffer += frame_data.get(ReplayBlock.TYPE_WEATHER, self.blocks.Weather())
-			framebuffer += frame_data.get(ReplayBlock.TYPE_TIMER, self.blocks.Timer())
+			framebuffer += frame_data.get(self.blocks.ReplayBlock.TYPE_GENERAL, self.blocks.General())
+			framebuffer += frame_data.get(self.blocks.ReplayBlock.TYPE_CLOCK, self.blocks.Clock())
+			framebuffer += frame_data.get(self.blocks.ReplayBlock.TYPE_WEATHER, self.blocks.Weather())
+			framebuffer += frame_data.get(self.blocks.ReplayBlock.TYPE_TIMER, self.blocks.Timer())
 
-			for vehicle_type in ReplayBlock.get_vehicles_types():
+			for vehicle_type in self.blocks.ReplayBlock.get_vehicles_types():
 				for vehicle_block in frame_data.get(vehicle_type, []):
 					framebuffer += vehicle_block
 
 			header_map = {}
-			for header_block in frame_data.get(ReplayBlock.TYPE_PED_HEADER, []):
+			for header_block in frame_data.get(self.blocks.ReplayBlock.TYPE_PED_HEADER, []):
 				header_map[header_block.index] = header_block
 
-			for ped_block in frame_data.get(ReplayBlock.TYPE_PED, []):
+			for ped_block in frame_data.get(self.blocks.ReplayBlock.TYPE_PED, []):
 				if ped_block.index in header_map:
 					framebuffer += header_map[ped_block.index]
 				framebuffer += ped_block
 
-			for trace_block in frame_data.get(ReplayBlock.TYPE_BULLET_TRACE, []):
+			for trace_block in frame_data.get(self.blocks.ReplayBlock.TYPE_BULLET_TRACE, []):
 				framebuffer += trace_block
 
 			if self._version >= Replay.VERSION_VICE_CITY:
-				framebuffer += frame_data.get(ReplayBlock.TYPE_MISC,  self.blocks.Misc())
+				framebuffer += frame_data.get(self.blocks.ReplayBlock.TYPE_MISC,  self.blocks.Misc())
 
-				for particle_block in frame_data.get(ReplayBlock.TYPE_PARTICLE, []):
+				for particle_block in frame_data.get(self.blocks.ReplayBlock.TYPE_PARTICLE, []):
 					framebuffer += particle_block
 
 				if self._version >= Replay.VERSION_SAN_ANDREAS:
 
-					for vehicle_deleted_block in frame_data.get(ReplayBlock.TYPE_VEHICLE_DELETED, []):
+					for vehicle_deleted_block in frame_data.get(self.blocks.ReplayBlock.TYPE_VEHICLE_DELETED, []):
 						framebuffer += vehicle_deleted_block
 
-					for ped_deleted_block in frame_data.get(ReplayBlock.TYPE_PED_DELETED, []):
+					for ped_deleted_block in frame_data.get(self.blocks.ReplayBlock.TYPE_PED_DELETED, []):
 						framebuffer += ped_deleted_block
 
-					for clothes_block in frame_data.get(ReplayBlock.TYPE_CLOTHES, []):
+					for clothes_block in frame_data.get(self.blocks.ReplayBlock.TYPE_CLOTHES, []):
 						framebuffer += clothes_block
 
 			framebuffer += self.blocks.FrameEnd()
 
 		self._frames = []
+		self._buffers = new_buffers
 		self._create_frames_from_buffers()
 
 	@property
