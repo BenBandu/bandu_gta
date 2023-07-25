@@ -1,7 +1,7 @@
 import ctypes
+from .....common.vector import BVec3
+from .....common.matrix import CompressedMatrix
 from .block import ReplayBlock
-from common.vector import BVec3
-from common.matrix import CompressedMatrix
 from ..common import Panels, Wheel, Colors
 
 

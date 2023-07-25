@@ -1,6 +1,6 @@
 import ctypes
 from .block import ReplayBlock
-from common.vector import BVec3, SVec3, RGBA
+from .....common.vector import BVec3, SVec3, RGBA
 
 
 class Particle(ReplayBlock):

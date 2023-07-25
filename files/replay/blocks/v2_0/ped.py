@@ -1,6 +1,6 @@
 import ctypes
 from .block import ReplayBlock
-from common.matrix import CompressedMatrix
+from .....common.matrix import CompressedMatrix
 
 
 class _StoredAnimationState(ctypes.LittleEndianStructure):

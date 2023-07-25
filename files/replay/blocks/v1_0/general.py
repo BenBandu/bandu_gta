@@ -1,7 +1,7 @@
 import ctypes
 from .block import ReplayBlock
-from common.vector import FVec3
-from common.matrix import FMatrix
+from .....common.vector import FVec3
+from .....common.matrix import FMatrix
 
 
 class General(ReplayBlock):

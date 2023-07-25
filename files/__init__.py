@@ -1,1 +1,1 @@
-import replay
+from . import replay
