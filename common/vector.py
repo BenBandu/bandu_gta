@@ -6,6 +6,11 @@ class FVec3(ctypes.LittleEndianStructure):
 		('x', ctypes.c_float), ('y', ctypes.c_float), ('z', ctypes.c_float),
 	)
 
+	def as_list(self):
+		length = ctypes.sizeof(self) // ctypes.sizeof(ctypes.c_float)
+		array = (ctypes.c_float * length).from_buffer_copy(self)
+		return [v for v in array]
+
 
 class FVec4(FVec3):
 	_fields_ = (
