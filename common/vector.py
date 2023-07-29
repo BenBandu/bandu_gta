@@ -35,8 +35,18 @@ class BVec3(ctypes.LittleEndianStructure):
 		('x', ctypes.c_int8), ('y', ctypes.c_int8), ('z', ctypes.c_int8),
 	)
 
+	def as_list(self):
+		length = ctypes.sizeof(self) // ctypes.sizeof(ctypes.c_int8)
+		array = (ctypes.c_int8 * length).from_buffer_copy(self)
+		return [v for v in array]
+
 
 class SVec3(ctypes.LittleEndianStructure):
 	_fields_ = (
 		('x', ctypes.c_int16), ('y', ctypes.c_int16), ('z', ctypes.c_int16),
 	)
+
+	def as_list(self):
+		length = ctypes.sizeof(self) // ctypes.sizeof(ctypes.c_int16)
+		array = (ctypes.c_int16 * length).from_buffer_copy(self)
+		return [v for v in array]
