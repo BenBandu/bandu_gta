@@ -1,4 +1,5 @@
 import ctypes
+import math
 
 
 class Panels(ctypes.LittleEndianStructure):
@@ -19,6 +20,15 @@ class Wheel(ctypes.LittleEndianStructure):
 		('suspension', ctypes.c_uint8 * 4),
 		('rotation', ctypes.c_uint8 * 4),
 	)
+
+	def get_steering_angle(self):
+		return self.angle / 50.0
+
+	def get_suspension(self, index):
+		return self.suspensnion[index] / 50.0
+
+	def get_rotation_as_angle(self, index):
+		return self.rotation[index] * math.pi / 128.0
 
 
 class Colors(ctypes.LittleEndianStructure):
