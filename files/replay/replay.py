@@ -39,6 +39,12 @@ class Replay:
 
 		return self
 
+	@classmethod
+	def create_from_buffers(cls, buffers, version):
+		self = cls(version)
+		self._buffers = buffers
+		self._create_frames_from_buffers()
+
 	def _get_identifier_from_version(self):
 		if self._version == self.VERSION_III:
 			return self.IDENTIFIER_III
@@ -103,7 +109,7 @@ class Replay:
 					self._frames.append(frame)
 					frame = Frame(self._version)
 				else:
-					frame.set_block(block.TYPE, block)
+					frame.set_block(block)
 
 	def _is_steam_version(self):
 		"""
@@ -206,3 +212,110 @@ class Replay:
 
 	def get_frames(self):
 		return self._frames
+
+	def get_buffers(self):
+		if self._dirty:
+			self._rebuild_buffers()
+
+		return self._buffers
+
+	def add_frame(self, frame):
+		self._frames.append(frame)
+		self._dirty = True
+
+	def merge_replays(self, other, offset=0, filters=[]):
+		if other.get_version() != self.get_version():
+			return
+
+		# if the offset is below 0, we technically want the replay to start with the other replay first
+		# so instead of doing something fancy, we just call this function on the other replay with this replay
+		# as the parameter, and an inverted offset
+		if offset < 0:
+			return other.merge_replays(self, offset * -1)
+
+		index_maps = [
+			{'vehicles': [], 'peds': []},
+			{'vehicles': [], 'peds': []}
+		]
+
+		vehicle_counter = 0
+		ped_counter = 0
+
+		self_frame_count = len(self._frames)
+
+		other_frames = other.get_frames()
+		other_frame_count = len(other_frames)
+
+		merged_replay = Replay(self.get_version())
+		for frame_idx in range(max(self_frame_count, other_frame_count)):
+			new_frame = Frame(self.get_version())
+
+			base_frames = [
+				self._frames[frame_idx] if frame_idx < self_frame_count else None,
+				other_frames[frame_idx] if other_frame_count > frame_idx >= offset else None
+			]
+
+			for i, old_frame in enumerate(base_frames):
+				if old_frame is None:
+					continue
+
+				index_map = index_maps[i]
+				filter_map = filters[i]
+
+				if new_frame.get_block(self.blocks.ReplayBlock.TYPE_GENERAL) is None:
+					for block_type in self.blocks.ReplayBlock.get_required_types():
+						new_frame.set_block(old_frame.get_blocK(block_type))
+
+				for vehicle_type in self.blocks.ReplayBlock.get_vehicles_types():
+					for vehicle in old_frame.get_block(vehicle_type, []):
+						old_index = vehicle.index
+						if old_index not in filter_map['vehicles']:
+							continue
+
+						if old_index in index_map['vehicles']:
+							new_index = index_map['vehicles'][old_index]
+						else:
+							new_index = vehicle_counter
+							vehicle_counter += 1
+							index_map['vehicles'][old_index] = new_index
+
+						vehicle.index = new_index
+						new_frame.set_block(vehicle)
+
+				for ped in old_frame.get_block(self.blocks.ReplayBlock.TYPE_PED, []):
+					old_index = ped.index
+					if old_index not in filter_map['peds']:
+						continue
+
+					if old_index in index_map['peds']:
+						new_index = index_map['peds'][old_index]
+					else:
+						new_index = ped_counter
+						ped_counter += 1
+						index_map['peds'][old_index] = new_index
+
+					ped.index = new_index
+					new_frame.set_block(ped)
+
+				for ped_header in old_frame.get_block(self.blocks.ReplayBlock.TYPE_PED_HEADER, []):
+					old_index = ped_header.index
+					if old_index not in filter_map['peds']:
+						continue
+
+					if old_index in index_map['peds']:
+						new_index = index_map['peds'][old_index]
+					else:
+						new_index = ped_counter
+						ped_counter += 1
+						index_map['peds'][old_index] = new_index
+
+					ped_header.index = new_index
+					new_frame.set_block(ped_header)
+
+				if self._version >= Replay.VERSION_VICE_CITY:
+					for particle in old_frame.get_block(self.blocks.ReplayBlock.TYPE_PARTICLE, []):
+						new_frame.set_block(particle)
+
+			merged_replay.add_frame(new_frame)
+
+		return merged_replay

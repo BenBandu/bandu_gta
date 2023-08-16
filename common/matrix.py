@@ -35,22 +35,21 @@ class FMatrix(ctypes.LittleEndianStructure):
 		matrix.location = self.location
 		return matrix
 
-	def as_list(self, column_major=False):
-
-		if column_major:
-			return [
-				[self.right.x, self.forward.x, self.up.x, self.location.x],
-				[self.right.y, self.forward.y, self.up.y, self.location.y],
-				[self.right.z, self.forward.z, self.up.z, self.location.z],
-				[self.right.w, self.forward.w, self.up.w, self.location.w],
-			]
-
+	def as_list(self):
 		return [
 			self.right.as_list(),
 			self.forward.as_list(),
 			self.up.as_list(),
 			self.location.as_list(),
 		]
+
+	def transposed(self):
+		transposed = FMatrix()
+		transposed.right =    FVec4(self.right.x, self.forward.x, self.up.x, self.location.x)
+		transposed.forward =  FVec4(self.right.y, self.forward.y, self.up.y, self.location.y)
+		transposed.up =       FVec4(self.right.z, self.forward.z, self.up.z, self.location.z)
+		transposed.location = FVec4(self.right.w, self.forward.w, self.up.w, self.location.w)
+		return transposed
 
 
 class CompressedMatrix(ctypes.LittleEndianStructure):

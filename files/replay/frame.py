@@ -6,17 +6,17 @@ class Frame:
 	def get_frame_data(self):
 		return self._frame_data
 
-	def get_block(self, block_type):
-		return self._frame_data.get(block_type, None)
+	def get_block(self, block_type, default=None):
+		return self._frame_data.get(block_type, default)
 
-	def set_block(self, block_type, block):
+	def set_block(self, block):
 		if block.TYPE in block.get_required_types():
-			self._frame_data[block_type] = block
+			self._frame_data[block.TYPE] = block
 		else:
-			if block_type not in self._frame_data:
-				self._frame_data[block_type] = []
+			if block.TYPE not in self._frame_data:
+				self._frame_data[block.TYPE] = []
 
-			self._frame_data[block_type].append(block)
+			self._frame_data[block.TYPE].append(block)
 
 	def get_size(self):
 		size = 0
