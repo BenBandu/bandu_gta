@@ -18,6 +18,9 @@ class Replay:
 	BUFFER_DEFAULT_MAX = 8
 	BUFFER_MODDED_MAX  = 64
 
+	MAX_VEHICLE_COUNT = 110
+	MAX_PED_COUNT = 140
+
 	BLOCKS = {
 		VERSION_III: blocks.v1_0,
 		VERSION_VICE_CITY: blocks.v2_0,
@@ -295,6 +298,9 @@ class Replay:
 						index_map['peds'][old_index] = new_index
 
 					ped.index = new_index
+					if ped.vehicle_index and ped.vehicle_index in index_map['vehicles']:
+						ped.vehicle_index = index_map['vehicles'][ped.vehicle_index]
+
 					new_frame.set_block(ped)
 
 				for ped_header in old_frame.get_block(self.blocks.ReplayBlock.TYPE_PED_HEADER, []):
