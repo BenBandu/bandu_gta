@@ -1,20 +1,32 @@
 import ctypes
 
 
-class FVec3(ctypes.LittleEndianStructure):
+class VectorBase(ctypes.LittleEndianStructure):
+	_fields_ = []
+
+	def as_list(self):
+		length = ctypes.sizeof(self) // ctypes.sizeof(self._fields_[0][1])
+		array = (ctypes.c_float * length).from_buffer_copy(self)
+		return [v for v in array]
+
+	def __getitem__(self, index):
+		name, _type = self.__class__._fields_[index]
+		return getattr(self, name)
+
+	def __setitem__(self, index, value):
+		name, _type = self.__class__._fields_[index]
+		setattr(self, name, value)
+
+
+class FVec3(VectorBase):
 	_fields_ = (
 		('x', ctypes.c_float), ('y', ctypes.c_float), ('z', ctypes.c_float),
 	)
 
-	def as_list(self):
-		length = ctypes.sizeof(self) // ctypes.sizeof(ctypes.c_float)
-		array = (ctypes.c_float * length).from_buffer_copy(self)
-		return [v for v in array]
 
-
-class FVec4(FVec3):
+class FVec4(VectorBase):
 	_fields_ = (
-		('w', ctypes.c_float),
+		('x', ctypes.c_float), ('y', ctypes.c_float), ('z', ctypes.c_float), ('w', ctypes.c_float),
 	)
 
 

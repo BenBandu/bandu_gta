@@ -11,6 +11,14 @@ class FMatrix(ctypes.LittleEndianStructure):
 		('location', FVec4)
 	)
 
+	def __getitem__(self, index):
+		name, _type = FMatrix._fields_[index]
+		return getattr(self, name)
+
+	def __setitem__(self, index, value):
+		name, _type = FMatrix._fields_[index]
+		setattr(self, name, value)
+
 	@classmethod
 	def from_compressed_matrix(cls, matrix):
 		self = cls()
