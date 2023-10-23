@@ -1,5 +1,5 @@
 from .frame import Frame
-from . import blocks
+from .blocks import ReplayBlockBase
 
 
 class Replay:
@@ -21,19 +21,12 @@ class Replay:
 	MAX_VEHICLE_COUNT = 110
 	MAX_PED_COUNT = 140
 
-	BLOCKS = {
-		VERSION_III: blocks.v1_0,
-		VERSION_VICE_CITY: blocks.v2_0,
-		VERSION_SAN_ANDREAS: blocks.v3_0,
-		VERSION_SAN_ANDREAS_STEAM: blocks.v4_0,
-	}
-
 	def __init__(self, version):
 		self._version = version
 		self._buffers = []
 		self._frames = []
 		self._dirty = False
-		self.blocks = Replay.BLOCKS[self._version]
+		self._block = ReplayBlockBase.get_version(version)
 
 	@classmethod
 	def create_from_file(cls, filepath):
@@ -103,12 +96,12 @@ class Replay:
 			offset = 0
 
 			while offset <= Replay.BUFFER_SIZE - 16:
-				block = self.blocks.ReplayBlock.create_from_buffer(buffer, offset)
+				block = self._block.create_from_buffer(buffer, offset)
 				offset += block.get_size()
 
-				if block.TYPE == self.blocks.ReplayBlock.TYPE_END:
+				if block.TYPE == self._block.TYPE_END:
 					break
-				elif block.TYPE == self.blocks.ReplayBlock.TYPE_FRAME_END:
+				elif block.TYPE == self._block.TYPE_FRAME_END:
 					self._frames.append(frame)
 					frame = Frame(self._version)
 				else:
@@ -122,7 +115,7 @@ class Replay:
 			raise ValueError('Can not determine if replay is steam version, as there is no data in the buffer')
 
 		# Read the data as the normal San Andreas version, as it will allow us to detect any deviations
-		ReplayBlock = Replay.BLOCKS[Replay.VERSION_SAN_ANDREAS].ReplayBlock
+		ReplayBlock = ReplayBlockBase.get_version(Replay.VERSION_SAN_ANDREAS)
 		buffer = self._buffers[0]
 		offset = 0
 
@@ -144,68 +137,24 @@ class Replay:
 			self._buffers = []
 			return
 
-		new_buffers = [bytearray()]
+		buffers = []
+		buffer = bytearray()
 		for frame in self._frames:
-			framebuffer = new_buffers[-1]
-			if len(framebuffer) + frame.get_size() > Replay.BUFFER_SIZE - 16:
-				# Frame can't fit in the current buffer, so we finish writing it by adding an end block
-				# and adding the remaining size, so it becomes the correct buffer size
-				framebuffer += self.blocks.End()
-				framebuffer += bytearray(Replay.BUFFER_SIZE - len(framebuffer))
+			buffer_size = len(buffer)
+			if buffer_size + frame.get_size() > Replay.BUFFER_SIZE - 16:
+				buffer += bytearray(Replay.BUFFER_SIZE - buffer_size)
+				buffers.append(buffer)
+				buffer = bytearray()
 
-				# Then we create a new buffer
-				new_buffers.append(bytearray())
-				framebuffer = new_buffers[-1]
-
-			frame_data = frame.get_frame_data()
-
-			framebuffer += frame_data.get_block(self.blocks.ReplayBlock.TYPE_GENERAL, self.blocks.General())
-			framebuffer += frame_data.get_block(self.blocks.ReplayBlock.TYPE_CLOCK, self.blocks.Clock())
-			framebuffer += frame_data.get_block(self.blocks.ReplayBlock.TYPE_WEATHER, self.blocks.Weather())
-			framebuffer += frame_data.get_block(self.blocks.ReplayBlock.TYPE_TIMER, self.blocks.Timer())
-
-			for vehicle_type in self.blocks.ReplayBlock.get_vehicles_types():
-				for vehicle_block in frame_data.get_block(vehicle_type, []):
-					framebuffer += vehicle_block
-
-			header_map = {}
-			for header_block in frame_data.get_block(self.blocks.ReplayBlock.TYPE_PED_HEADER, []):
-				header_map[header_block.index] = header_block
-
-			for ped_block in frame_data.get_block(self.blocks.ReplayBlock.TYPE_PED, []):
-				if ped_block.index in header_map:
-					framebuffer += header_map[ped_block.index]
-				framebuffer += ped_block
-
-			for trace_block in frame_data.get_block(self.blocks.ReplayBlock.TYPE_BULLET_TRACE, []):
-				framebuffer += trace_block
-
-			if self._version >= Replay.VERSION_VICE_CITY:
-				framebuffer += frame_data.get_block(self.blocks.ReplayBlock.TYPE_MISC, self.blocks.Misc())
-
-				for particle_block in frame_data.get_block(self.blocks.ReplayBlock.TYPE_PARTICLE, []):
-					framebuffer += particle_block
-
-				if self._version >= Replay.VERSION_SAN_ANDREAS:
-
-					for vehicle_deleted_block in frame_data.get_block(self.blocks.ReplayBlock.TYPE_VEHICLE_DELETED, []):
-						framebuffer += vehicle_deleted_block
-
-					for ped_deleted_block in frame_data.get_block(self.blocks.ReplayBlock.TYPE_PED_DELETED, []):
-						framebuffer += ped_deleted_block
-
-					for clothes_block in frame_data.get_block(self.blocks.ReplayBlock.TYPE_CLOTHES, []):
-						framebuffer += clothes_block
-
-			framebuffer += self.blocks.FrameEnd()
+			frame.write_frame_to_buffer(buffer)
 
 		self._frames = []
-		self._buffers = new_buffers
+		self._buffers = buffers
 		self._create_frames_from_buffers()
 
 	def _update_version(self, version):
 		self._version = version
-		self.blocks = self.BLOCKS[version]
+		self._block = ReplayBlockBase.get_version(version)
 
 	def get_version(self):
 		return self._version
@@ -215,6 +164,12 @@ class Replay:
 
 	def get_frames(self):
 		return self._frames
+
+	def set_dirty(self):
+		self._dirty = True
+
+	def get_frame(self, index):
+		return self._frames[index]
 
 	def get_buffers(self):
 		if self._dirty:
@@ -234,7 +189,7 @@ class Replay:
 		# so instead of doing something fancy, we just call this function on the other replay with this replay
 		# as the parameter, and an inverted offset
 		if offset < 0:
-			return other.merge_replays(self, offset * -1)
+			return other.merge_replays(self, -offset)
 
 		index_maps = [
 			{'vehicles': [], 'peds': []},
@@ -251,7 +206,7 @@ class Replay:
 
 		merged_replay = Replay(self.get_version())
 		for frame_idx in range(max(self_frame_count, other_frame_count)):
-			new_frame = Frame(self.get_version())
+			new_frame = Frame(self._version)
 
 			base_frames = [
 				self._frames[frame_idx] if frame_idx < self_frame_count else None,
@@ -265,11 +220,11 @@ class Replay:
 				index_map = index_maps[i]
 				filter_map = filters[i]
 
-				if new_frame.get_block(self.blocks.ReplayBlock.TYPE_GENERAL) is None:
-					for block_type in self.blocks.ReplayBlock.get_required_types():
-						new_frame.set_block(old_frame.get_blocK(block_type))
+				if new_frame.get_block(self._block.TYPE_GENERAL) is None:
+					for block_type in self._block.get_required_types():
+						new_frame.set_block(old_frame.get_block(block_type))
 
-				for vehicle_type in self.blocks.ReplayBlock.get_vehicles_types():
+				for vehicle_type in self._block.get_vehicles_types():
 					for vehicle in old_frame.get_block(vehicle_type, []):
 						old_index = vehicle.index
 						if old_index not in filter_map['vehicles']:
@@ -285,7 +240,7 @@ class Replay:
 						vehicle.index = new_index
 						new_frame.set_block(vehicle)
 
-				for ped in old_frame.get_block(self.blocks.ReplayBlock.TYPE_PED, []):
+				for ped in old_frame.get_block(self._block.TYPE_PED, []):
 					old_index = ped.index
 					if old_index not in filter_map['peds']:
 						continue
@@ -303,7 +258,7 @@ class Replay:
 
 					new_frame.set_block(ped)
 
-				for ped_header in old_frame.get_block(self.blocks.ReplayBlock.TYPE_PED_HEADER, []):
+				for ped_header in old_frame.get_block(self._block.TYPE_PED_HEADER, []):
 					old_index = ped_header.index
 					if old_index not in filter_map['peds']:
 						continue
@@ -319,7 +274,7 @@ class Replay:
 					new_frame.set_block(ped_header)
 
 				if self._version >= Replay.VERSION_VICE_CITY:
-					for particle in old_frame.get_block(self.blocks.ReplayBlock.TYPE_PARTICLE, []):
+					for particle in old_frame.get_block(self._block.TYPE_PARTICLE, []):
 						new_frame.set_block(particle)
 
 			merged_replay.add_frame(new_frame)

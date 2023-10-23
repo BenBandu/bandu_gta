@@ -23,6 +23,7 @@ class ReplayBlockBase(ctypes.LittleEndianStructure):
 	TYPE_PLANE = None
 	TYPE_TRAIN = None
 	TYPE_CLOTHES = None
+	TYPE_FREEPLAY = None
 
 	_fields_ = (
 		('block_type', ctypes.c_uint8),
@@ -42,11 +43,25 @@ class ReplayBlockBase(ctypes.LittleEndianStructure):
 		return block.get_as_block_type()
 
 	@classmethod
+	def create_from_type(cls, block_type):
+		for sub_cls in cls.__subclasses__():
+			if sub_cls.TYPE == block_type:
+				return sub_cls()
+
+	@classmethod
 	def get_vehicles_types(cls):
 		raise NotImplementedError
 
 	@classmethod
 	def get_required_types(cls):
+		raise NotImplementedError
+
+	@classmethod
+	def get_singular_types(cls):
+		raise NotImplementedError
+
+	@classmethod
+	def get_multi_types(cls):
 		raise NotImplementedError
 
 	def get_as_block_type(self):

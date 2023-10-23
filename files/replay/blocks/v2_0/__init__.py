@@ -12,3 +12,5 @@ from .timer import Timer
 from .bullet_trace import BulletTrace
 from .particle import Particle
 from .misc import Misc
+from .freeplay import Freeplay
+

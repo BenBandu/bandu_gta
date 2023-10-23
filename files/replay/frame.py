@@ -1,32 +1,48 @@
+from .blocks import ReplayBlockBase
+
+
 class Frame:
 	def __init__(self, version):
 		self._version = version
-		self._frame_data = {}
-
-	def get_frame_data(self):
-		return self._frame_data
+		self._block = ReplayBlockBase.get_version(version)
+		self._blocks = []
+		self._block_map = {}
 
 	def get_block(self, block_type, default=None):
-		return self._frame_data.get(block_type, default)
+		result = self._block_map.get(block_type, default)
+		if result is default:
+			return default
+
+		if type(result) in (list, tuple):
+			return [block for idx, block in enumerate(self._blocks) if idx in result]
+
+		return self._blocks[result]
 
 	def set_block(self, block):
-		if block.TYPE in block.get_required_types():
-			self._frame_data[block.TYPE] = block
-		else:
-			if block.TYPE not in self._frame_data:
-				self._frame_data[block.TYPE] = []
+		self._blocks.append(block)
+		idx = len(self._blocks) - 1
 
-			self._frame_data[block.TYPE].append(block)
+		# Map block we just added to its type for easy retrieval
+		if block.TYPE in block.get_singular_types():
+			self._block_map[block.TYPE] = idx
+		else:
+			if block.TYPE not in self._block_map:
+				self._block_map[block.TYPE] = []
+
+			self._block_map[block.TYPE].append(idx)
 
 	def get_size(self):
-		size = 0
-		for data in self._frame_data.values():
-			if not data:
-				continue
+		return len(b''.join(self._blocks)) + 4
 
-			if type(data) in (list, tuple):
-				size += data[0].get_size() * len(data)
-			else:
-				size += data.get_size()
+	def rebuild_map(self):
+		blocks = self._blocks
 
-		return size
+		self._blocks = []
+		self._block_map = {}
+
+		for block in blocks:
+			self.set_block(block)
+
+	def write_frame_to_buffer(self, buffer):
+		buffer += b''.join(self._blocks)
+		buffer += self._block.create_from_type(self._block.TYPE_FRAME_END)

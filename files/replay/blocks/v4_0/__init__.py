@@ -19,3 +19,4 @@ from .helicopter import Helicopter
 from .plane import Plane
 from .train import Train
 from .clothes import Clothes
+from .freeplay import Freeplay

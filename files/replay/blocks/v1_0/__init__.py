@@ -9,3 +9,4 @@ from .weather import Weather
 from .frame_end import FrameEnd
 from .timer import Timer
 from .bullet_trace import BulletTrace
+from .freeplay import Freeplay
