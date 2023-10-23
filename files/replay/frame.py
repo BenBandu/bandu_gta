@@ -4,7 +4,7 @@ from .blocks import ReplayBlockBase
 class Frame:
 	def __init__(self, version):
 		self._version = version
-		self._block = ReplayBlockBase.get_version(version)
+		self.replay_block = ReplayBlockBase.get_version(version)
 		self._blocks = []
 		self._block_map = {}
 
@@ -45,4 +45,4 @@ class Frame:
 
 	def write_frame_to_buffer(self, buffer):
 		buffer += b''.join(self._blocks)
-		buffer += self._block.create_from_type(self._block.TYPE_FRAME_END)
+		buffer += self.replay_block.create_from_type(self.replay_block.TYPE_FRAME_END)
